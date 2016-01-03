@@ -7,29 +7,32 @@
 // @homepage     https://github.com/guoquan/jupyter-scroll
 // @downloadURL  https://raw.githubusercontent.com/guoquan/jupyter-scroll/master/jupyter-scroll.js
 // @updateURL    https://raw.githubusercontent.com/guoquan/jupyter-scroll/master/jupyter-scroll.js
-// @include      
+// @include      /^https?://.*/notebook/
 // @exclude      
 // @match        
-// @run-at       document-idle
+// @run-at       document-end
 // @grant        none
 // ==/UserScript==
-/* jshint -W097 */
 
-_jupyter_scroll_debug_ = true;
-_jupyter_scroll_speed_ = 500;
+var __jupyter_scroll = {};
+__jupyter_scroll.debug = false;
+__jupyter_scroll.speed = 500;
 
-$(document).ready(function(){
+$(function(){
+    // strict mode
     'use strict';
 
-    window.alert("Hello.. My Extension processed you..");
+    if (__jupyter_scroll.debug) console.debug("setup script running");
 
     // use the "DOMSubtreeModified" event to track the scroll box
-    //$("div.output_scroll").off("DOMSubtreeModified")
-    $("div.output_scroll").on("DOMSubtreeModified", function() {
+    //$("document").off("DOMSubtreeModified")
+    // bind the event to document so it can be valid for nodes loaded later
+    $(document).on("DOMSubtreeModified", "div.output_scroll", function() {
+        if (__jupyter_scroll.debug) console.debug("Change event triggered.");
         scroll = $(this);
         if (scroll.children().length > 0) {
             // if scroll has child, let's do the hack
-            if (_jupyter_scroll_debug_) {
+            if (__jupyter_scroll.debug) {
                 console.debug("current scroll top: " + scroll.scrollTop());
                 console.debug("last child position: " + scroll.children().last().position().top);
                 console.debug("scroll height: " + scroll.height());
@@ -40,14 +43,16 @@ $(document).ready(function(){
             // I want to show half the final output and half the error message
             // if no error message, it just over scroll, and that is fine
             // do the calculation
-            scroll_to = (scroll.scrollTop() + scroll.children().last().position().top - 0.5 * scroll.height());
+            var scroll_to = (scroll.scrollTop() + scroll.children().last().position().top - 0.5 * scroll.height());
             // do a little animation that looks more smooth
-            scroll.animate({scrollTop:scroll_to}, _jupyter_scroll_speed_);
+            scroll.animate({scrollTop:scroll_to}, __jupyter_scroll.speed);
             //scroll.scrollTop(scroll_to);
 
-            if (_jupyter_scroll_debug_) {
+            if (__jupyter_scroll.debug) {
                 console.debug("scroll to: " + scroll_to);
             }
         }
     });
+
+    if (__jupyter_scroll.debug) console.debug("setup script finished");
 });
