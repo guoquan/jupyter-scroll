@@ -30,28 +30,55 @@ $(function(){
     $(document).on("DOMSubtreeModified", "div.output_scroll", function() {
         if (__jupyter_scroll.debug) console.debug("Change event triggered.");
         scroll = $(this);
-        if (scroll.children().length > 0) {
-            // if scroll has child, let's do the hack
-            if (__jupyter_scroll.debug) {
-                console.debug("current scroll top: " + scroll.scrollTop());
+        
+        if (__jupyter_scroll.debug) {
+            console.debug("current scroll top: " + scroll.scrollTop());
+            console.debug("scroll height: " + scroll.height());
+            console.debug("number of children: " + scroll.children().length);
+            if (scroll.children().length > 0) {
                 console.debug("last child position: " + scroll.children().last().position().top);
-                console.debug("scroll height: " + scroll.height());
-            }
-
-            // finish all animations
-            scroll.finish()
-            // I want to show half the final output and half the error message
-            // if no error message, it just over scroll, and that is fine
-            // do the calculation
-            var scroll_to = (scroll.scrollTop() + scroll.children().last().position().top - 0.5 * scroll.height());
-            // do a little animation that looks more smooth
-            scroll.animate({scrollTop:scroll_to}, __jupyter_scroll.speed);
-            //scroll.scrollTop(scroll_to);
-
-            if (__jupyter_scroll.debug) {
-                console.debug("scroll to: " + scroll_to);
+                console.debug("last child height: " + scroll.children().last().height());
             }
         }
+
+        // scroll.children() are the those div.output_area
+        // 3 types:
+        //     1) stdout stream (has a ".output_subarea.output_text" child, with ".output_stream.output_stdout"),
+        //     2) stderr stream (has a ".output_subarea.output_text" child, with ".output_stream.output_stderr"), and
+        //     3) error (different from stderr! has a ".output_subarea.output_text" child, with ".output_error")
+        // logging uses stderr
+        // if different types of output are used alternatively, many areas are generated
+        // if error come out (including KeyboardInterrupt), the process will stop and no more area will be added
+        // my strategy is:
+        //     scroll to the very bottom if no error (only stdout and stderr),
+        //     and to between error and the 2nd to the last area else-wise
+
+        if (scroll.children().length == 0) {
+            // if no children, nothing is printed and we shall sit tight
+            return;
+        }
+
+        // prepare for the calculation
+        var scroll_to = 0;
+        // finish all animations (to get every position up-to-date)
+        scroll.finish();
+        
+        if (scroll.children().last().children(".output_subarea.output_text").hasClass("output_error")) {
+            // error (or anything more than this) is out
+            // scroll to between the std out and the error
+            // do the calculation
+            scroll_to = scroll.scrollTop() + scroll.children().last().position().top - 0.5 * scroll.height();
+        } else {
+            // no error, but logging and std out
+            // just to to end of std out
+            scroll_to = scroll.scrollTop() + scroll.children().last().position().top + scroll.children().last().height() - scroll.height();
+        }
+
+        // do a little animation that looks more smooth
+        scroll.animate({scrollTop:scroll_to}, __jupyter_scroll.speed);
+        // scroll.scrollTop(scroll_to);
+
+        if (__jupyter_scroll.debug) console.debug("scroll to: " + scroll_to);
     });
 
     if (__jupyter_scroll.debug) console.debug("setup script finished");
