@@ -19,7 +19,7 @@ var __jupyter_scroll__ = {};
 // Configuration
 //---------------------------------
 // Print debug information
-__jupyter_scroll__.debug = true;
+__jupyter_scroll__.debug = false;
 
 // Time duration for scrolling animation.
 //     Set to 0 or negetive value to disable animation
