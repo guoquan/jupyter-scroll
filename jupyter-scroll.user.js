@@ -5,8 +5,8 @@
 // @description  Jupyter Notebook is a web application that allows you to create and run live code online. This script automatically scroll down the output scroll in jupyter to show the final result. This is useful when long pages of output are generated but you only want to track the latest one.
 // @author       Guo Quan <guoquanscu@gmail.com>
 // @homepage     https://github.com/guoquan/jupyter-scroll
-// @downloadURL  https://raw.githubusercontent.com/guoquan/jupyter-scroll/master/jupyter-scroll.js
-// @updateURL    https://raw.githubusercontent.com/guoquan/jupyter-scroll/master/jupyter-scroll.js
+// @downloadURL  https://github.com/guoquan/jupyter-scroll/raw/master/jupyter-scroll.user.js
+// @updateURL    https://github.com/guoquan/jupyter-scroll/raw/master/jupyter-scroll.user.js
 // @include      /^https?://.*/notebook/
 // @exclude
 // @match
