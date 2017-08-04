@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Jupyter Scroll
 // @namespace    http://guoquan.org/
-// @version      0.2
+// @version      0.3
 // @description  Jupyter Notebook is a web application that allows you to create and run live code online. This script automatically scroll down the output scroll in jupyter to show the final result. This is useful when long pages of output are generated but you only want to track the latest one.
 // @author       Guo Quan <guoquanscu@gmail.com>
 // @homepage     https://github.com/guoquan/jupyter-scroll
@@ -34,6 +34,13 @@ __jupyter_scroll__.gamma = 0.5;
 //     Set to a positive factor in (0, 1)
 //     The smaller it is, the earlier it finish the next scroll
 __jupyter_scroll__.early = 0.5;
+
+// Easing function to be used during animation, if there is
+//     Set to a string {'linear', 'swing'}
+//     These are support defaultly in jquery.
+//     Otherwise implement or include other easing functions.
+//     Set to `linear` with `_.early=1` and large `_.speed` will give linear move of the output
+__jupyter_scroll__.earing = 'swing';
 //---------------------------------
 
 $(function(){
@@ -44,9 +51,10 @@ $(function(){
     if (_.debug) console.debug("setup script running");
 
     var last = new Date().getTime();
-    var mduration = _.speed;
+    var mduration = 0;
     var num_child = 0;
     var last_child_height = 0;
+    var last_scroll_to = 0;
 
     // use the "DOMSubtreeModified" event to track the scroll box
     //$("document").off("DOMSubtreeModified")
@@ -77,13 +85,6 @@ $(function(){
         num_child = children.length;
         last_child_height = last_child.height();
 
-        // estimate trigger time
-        var current = new Date().getTime();
-        var duration = current - last;
-        last = current;
-        // mean duration, to predict next trigger and finish the animation before that
-        mduration = _.gamma * duration + (1 - _.gamma) * mduration;
-
         if (_.debug) {
             console.debug("current scroll top: " + scroll.scrollTop());
             console.debug("scroll height: " + scroll.height());
@@ -92,10 +93,6 @@ $(function(){
                 console.debug("last child position: " + last_child.position().top);
                 console.debug("last child height: " + last_child.height());
             }
-
-            console.debug("current trigger time: " + current);
-            console.debug("duration between last two triggers: " + duration);
-            console.debug("mean duration between two triggers: " + mduration);
         }
 
         // children are the those div.output_area
@@ -125,19 +122,40 @@ $(function(){
             // just to to end of std out
             scroll_to = scroll.scrollTop() + last_child.position().top + last_child.height() - scroll.height();
         }
+        if (_.debug) console.debug("scroll_to: ", scroll_to);
 
-        if (_.speed > 0) {
-            // do a little animation that looks more smooth
-            var dure = Math.min(_.speed, mduration*_.early);
-            scroll.finish().animate({scrollTop:scroll_to}, dure);
-            if (_.debug) console.debug("scroll to: " + scroll_to);
-            if (_.debug) console.debug("scroll duration: " + dure);
+        if (scroll_to > 0) {
+            // estimate trigger time
+            var current = new Date().getTime();
+            var duration = current - last;
+            last = current;
+            // mean duration, to predict next trigger and finish the animation before that
+            if (mduration === 0) {
+                mduration = duration;
+            } else {
+                mduration = _.gamma * duration + (1 - _.gamma) * mduration;
+            }
+
+            if (_.debug) {
+                console.debug("current trigger time: " + current);
+                console.debug("duration between last two triggers: " + duration);
+                console.debug("mean duration between two triggers: " + mduration);
+            }
+
+            if (_.speed > 0) {
+                // do a little animation that looks more smooth
+                var dure = Math.min(_.speed, mduration*_.early);
+                scroll.finish().scrollTop(last_scroll_to).animate({scrollTop:scroll_to}, dure, _.earing);
+                if (_.debug) console.debug("scroll duration: " + dure);
+            } else {
+                scroll.finish().scrollTop(scroll_to);
+            }
+
+            last_scroll_to = scroll_to;
+            if (_.debug) console.debug("time cost: " + (new Date().getTime() - start));
         } else {
-            scroll.finish().scrollTop(scroll_to);
-            if (_.debug) console.debug("scroll to: " + scroll_to);
+            if (_.debug) console.debug("Wrong scroll target. It is false trigger of the event.");
         }
-
-        if (_.debug) console.debug("time cost: " + (new Date().getTime() - start));
     });
 
     if (_.debug) console.debug("setup script finished");
